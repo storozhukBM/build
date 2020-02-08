@@ -194,7 +194,7 @@ func (b *Build) printCurrentCommand() {
 }
 
 func (b *Build) printAvailableTargets() {
-	fmt.Printf("available targets:\n")
+	fmt.Printf("Available targets:\n")
 	for _, cmd := range b.commandsRegistrationOrd {
 		fmt.Printf("    - "+blue+"%+v\n"+reset, cmd)
 	}
@@ -204,6 +204,6 @@ func (b *Build) printAllErrorsAndExit() {
 	for _, err := range b.buildErrors {
 		fmt.Printf(red+"%v\n"+reset, err)
 	}
-	fmt.Println("can't execute build")
+	fmt.Println("Can't execute build")
 	os.Exit(-1)
 }
