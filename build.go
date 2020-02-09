@@ -8,6 +8,12 @@ import (
 	"strings"
 )
 
+const blue = "\u001b[36m"
+const yellow = "\u001b[33m"
+const green = "\u001b[32m"
+const red = "\u001b[31m"
+const reset = "\u001b[0m"
+
 const Go = "go"
 
 type Command struct {
@@ -188,9 +194,16 @@ func (b *Build) AddError(err error) {
 	b.buildErrors = append(b.buildErrors, err)
 }
 
-const blue = "\u001b[36m"
-const red = "\u001b[31m"
-const reset = "\u001b[0m"
+func (b *Build) Info(message string) {
+	if !b.verbose {
+		return
+	}
+	fmt.Println(green + "[" + b.currentTarget + "] [info] " + message + reset)
+}
+
+func (b *Build) Warn(message string) {
+	fmt.Println(yellow + "[" + b.currentTarget + "] [warn] " + message + reset)
+}
 
 func (b *Build) printCurrentCommand() {
 	fmt.Println(blue + "[" + b.currentTarget + "]" + reset)

@@ -1,6 +1,9 @@
 package main
 
-import . "github.com/storozhukBM/build"
+import (
+	"fmt"
+	. "github.com/storozhukBM/build"
+)
 
 var b = NewBuild(BuildOptions{})
 var commands = []Command{
@@ -12,6 +15,11 @@ var commands = []Command{
 	{`verify`, func() {
 		b.Run(Go, `vet`, `-composites=false`, `./...`)
 		b.Run(Go, `build`, `./...`)
+	}},
+
+	{`test`, func() {
+		b.Info(fmt.Sprintf("hello %v!!!", "sailor"))
+		b.Warn(fmt.Sprintf("hello %v!!!", "bananas"))
 	}},
 }
 
