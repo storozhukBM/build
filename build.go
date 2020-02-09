@@ -77,7 +77,7 @@ func (b *Build) Run(cmd string, args ...string) {
 	}
 	runErr := c.Run()
 	if runErr != nil {
-		b.buildErrors = append(b.buildErrors, runErr)
+		b.AddError(runErr)
 	}
 }
 
@@ -118,15 +118,11 @@ func (b *Build) ShRun(cmd string, args ...string) {
 func (b *Build) Cmd(subCommand string, body func()) {
 	_, ok := b.commands[subCommand]
 	if ok {
-		b.buildErrors = append(
-			b.buildErrors, fmt.Errorf("can't register command `%v`. Already has command with such name", subCommand),
-		)
+		b.AddError(fmt.Errorf("can't register command `%v`. Already has command with such name", subCommand))
 		return
 	}
 	if body == nil {
-		b.buildErrors = append(
-			b.buildErrors, fmt.Errorf("can't register command `%v`. Command body can't be nil", subCommand),
-		)
+		b.AddError(fmt.Errorf("can't register command `%v`. Command body can't be nil", subCommand))
 		return
 	}
 	b.commands[subCommand] = body
@@ -170,7 +166,7 @@ func (b *Build) Build(args []string) {
 	for _, cmd := range args {
 		if _, ok := b.commands[cmd]; !ok {
 			b.printAvailableTargets()
-			b.buildErrors = append(b.buildErrors, fmt.Errorf("can't find such command as: `%v`", cmd))
+			b.AddError(fmt.Errorf("can't find such command as: `%v`", cmd))
 			b.printAllErrorsAndExit()
 		}
 	}
@@ -183,6 +179,13 @@ func (b *Build) Build(args []string) {
 			b.printAllErrorsAndExit()
 		}
 	}
+}
+
+func (b *Build) AddError(err error) {
+	if err == nil {
+		return
+	}
+	b.buildErrors = append(b.buildErrors, err)
 }
 
 const blue = "\u001b[36m"
