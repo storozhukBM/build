@@ -19,8 +19,20 @@ var commands = []Command{
 
 	{`test`, func() {
 		b.Info(fmt.Sprintf("hello %v!!!", "sailor"))
+		additionalBuildFunc()
 		b.Warn(fmt.Sprintf("hello %v!!!", "bananas"))
 	}},
+
+	{`fail`, func() {
+		b.Info(fmt.Sprintf("going to fail"))
+		b.AddTarget("targetThatWillFail")
+		b.AddError(fmt.Errorf( "This thing supose to fail"))
+	}},
+}
+
+func additionalBuildFunc() {
+	defer b.AddTarget("additionalStep")()
+	b.Info(fmt.Sprintf("hey %v!!!", "brother"))
 }
 
 func main() {

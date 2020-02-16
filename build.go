@@ -1,6 +1,7 @@
 package build
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -8,7 +9,8 @@ import (
 	"strings"
 )
 
-const blue = "\u001b[36m"
+const magenta = "\u001b[35m"
+const cyan = "\u001b[36m"
 const yellow = "\u001b[33m"
 const green = "\u001b[32m"
 const red = "\u001b[31m"
@@ -34,7 +36,7 @@ type Build struct {
 	stderr      io.Writer
 	buildErrors []error
 
-	currentTarget string
+	targets []string
 
 	commands                map[string]func()
 	commandsRegistrationOrd []string
@@ -76,10 +78,7 @@ func (b *Build) Run(cmd string, args ...string) {
 	c.Stdout = b.stderr
 	c.Stdin = os.Stdin
 	if b.verbose {
-		if b.currentTarget != "" {
-			fmt.Printf("[%s] ", b.currentTarget)
-		}
-		fmt.Printf("%s %s\n", cmd, strings.Join(args, " "))
+		fmt.Printf(magenta+"[cmd] %s %s\n"+reset, cmd, strings.Join(args, " "))
 	}
 	runErr := c.Run()
 	if runErr != nil {
@@ -178,13 +177,16 @@ func (b *Build) Build(args []string) {
 	}
 
 	for _, cmd := range args {
-		b.currentTarget = cmd
+		b.targets = []string{cmd}
 		b.printCurrentCommand()
 		b.commands[cmd]()
 		if len(b.buildErrors) > 0 {
 			b.printAllErrorsAndExit()
 		}
 	}
+
+	fmt.Println()
+	fmt.Println(green + "Successful build" + reset)
 }
 
 func (b *Build) AddError(err error) {
@@ -194,32 +196,54 @@ func (b *Build) AddError(err error) {
 	b.buildErrors = append(b.buildErrors, err)
 }
 
+func (b *Build) AddTarget(newTarget string) func() {
+	b.targets = append(b.targets, newTarget)
+	b.printCurrentCommand()
+	return func() {
+		b.targets = b.targets[:len(b.targets)-1]
+	}
+}
+
 func (b *Build) Info(message string) {
 	if !b.verbose {
 		return
 	}
-	fmt.Println(green + "[" + b.currentTarget + "] [info] " + message + reset)
+	fmt.Println(green + "[info] " + message + reset)
 }
 
 func (b *Build) Warn(message string) {
-	fmt.Println(yellow + "[" + b.currentTarget + "] [warn] " + message + reset)
+	fmt.Println(yellow + "[warn] " + message + reset)
 }
 
 func (b *Build) printCurrentCommand() {
-	fmt.Println(blue + "[" + b.currentTarget + "]" + reset)
+	fmt.Println(cyan + b.targetsToString() + reset)
 }
 
 func (b *Build) printAvailableTargets() {
 	fmt.Printf("Available targets:\n")
 	for _, cmd := range b.commandsRegistrationOrd {
-		fmt.Printf("    - "+blue+"%+v\n"+reset, cmd)
+		fmt.Printf("    - "+cyan+"%+v\n"+reset, cmd)
 	}
 }
 
+func (b *Build) targetsToString() string {
+	if len(b.targets) == 0 {
+		return ""
+	}
+	buf := bytes.NewBufferString("[" + b.targets[0])
+	for _, target := range b.targets[1:] {
+		_, _ = buf.WriteString(" | ")
+		_, _ = buf.WriteString(target)
+	}
+	buf.WriteString("]")
+	return buf.String()
+}
+
 func (b *Build) printAllErrorsAndExit() {
+	fmt.Println()
 	for _, err := range b.buildErrors {
 		fmt.Printf(red+"%v\n"+reset, err)
 	}
-	fmt.Println("Can't execute build")
+	fmt.Println(red + b.targetsToString() + " Build failed" + reset)
 	os.Exit(-1)
 }
