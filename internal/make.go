@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
+	"strconv"
+
 	. "github.com/storozhukBM/build"
 )
 
@@ -27,6 +30,11 @@ var commands = []Command{
 		b.Info(fmt.Sprintf("going to fail"))
 		b.AddTarget("targetThatWillFail")
 		b.AddError(fmt.Errorf( "This thing supose to fail"))
+	}},
+
+	{`failFromRun`, func() {
+		b.Info(fmt.Sprintf("going to fail"))
+		b.Run(strconv.Itoa(rand.Int()))
 	}},
 }
 

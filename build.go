@@ -83,6 +83,7 @@ func (b *Build) Run(cmd string, args ...string) {
 	runErr := c.Run()
 	if runErr != nil {
 		b.AddError(runErr)
+		b.printAllErrorsAndExit()
 	}
 }
 
