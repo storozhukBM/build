@@ -2,6 +2,7 @@ package build
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -83,7 +84,10 @@ func (b *Build) Run(cmd string, args ...string) {
 	runErr := c.Run()
 	if runErr != nil {
 		b.AddError(runErr)
-		b.printAllErrorsAndExit()
+		panic(fmt.Errorf(
+			"failed during command execution: %s %s",
+			cmd, strings.Join(args, " "),
+		))
 	}
 }
 
@@ -149,19 +153,26 @@ func (b *Build) Once(name string, body func()) {
 	body()
 }
 
-func (b *Build) BuildFromOsArgs() {
-	b.Build(os.Args[1:])
+func (b *Build) BuildFromOsArgsAndExit() {
+	buildErr := b.Build(os.Args[1:])
+	if buildErr != nil {
+		os.Exit(-1)
+	}
 }
 
-func (b *Build) Build(args []string) {
+func (b *Build) BuildFromOsArgs() error {
+	return b.Build(os.Args[1:])
+}
+
+func (b *Build) Build(args []string) error {
 	if len(b.buildErrors) > 0 {
-		b.printAllErrorsAndExit()
-		return
+		b.printAllErrors()
+		return errors.New("build failed during initialization")
 	}
 
 	if len(args) == 0 || args[0] == "-h" {
 		b.printAvailableTargets()
-		return
+		return nil
 	}
 
 	if args[0] == "-v" {
@@ -173,21 +184,22 @@ func (b *Build) Build(args []string) {
 		if _, ok := b.commands[cmd]; !ok {
 			b.printAvailableTargets()
 			b.AddError(fmt.Errorf("can't find such command as: `%v`", cmd))
-			b.printAllErrorsAndExit()
+			return errors.New("build failed during initialization")
 		}
 	}
 
 	for _, cmd := range args {
 		b.targets = []string{cmd}
-		b.printCurrentCommand()
-		b.commands[cmd]()
+		b.executeCmd(cmd)
 		if len(b.buildErrors) > 0 {
-			b.printAllErrorsAndExit()
+			b.printAllErrors()
+			return fmt.Errorf("build failed during `%s` execution", cmd)
 		}
 	}
 
 	fmt.Println()
 	fmt.Println(green + "Successful build" + reset)
+	return nil
 }
 
 func (b *Build) AddError(err error) {
@@ -216,6 +228,17 @@ func (b *Build) Warn(message string) {
 	fmt.Println(yellow + "[warn] " + message + reset)
 }
 
+func (b *Build) executeCmd(cmd string) {
+	defer func() {
+		cmdErr := recover()
+		if cmdErr != nil && len(b.buildErrors) == 0 {
+			b.AddError(fmt.Errorf("unexpected error during command execution %+v", cmdErr))
+		}
+	}()
+	b.printCurrentCommand()
+	b.commands[cmd]()
+}
+
 func (b *Build) printCurrentCommand() {
 	fmt.Println(cyan + b.targetsToString() + reset)
 }
@@ -240,11 +263,10 @@ func (b *Build) targetsToString() string {
 	return buf.String()
 }
 
-func (b *Build) printAllErrorsAndExit() {
+func (b *Build) printAllErrors() {
 	fmt.Println()
 	for _, err := range b.buildErrors {
 		fmt.Printf(red+"%v\n"+reset, err)
 	}
 	fmt.Println(red + b.targetsToString() + " Build failed" + reset)
-	os.Exit(-1)
 }

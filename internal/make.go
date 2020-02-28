@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"strconv"
 
 	. "github.com/storozhukBM/build"
@@ -29,7 +30,7 @@ var commands = []Command{
 	{`fail`, func() {
 		b.Info(fmt.Sprintf("going to fail"))
 		b.AddTarget("targetThatWillFail")
-		b.AddError(fmt.Errorf( "This thing supose to fail"))
+		b.AddError(fmt.Errorf("This thing supose to fail"))
 	}},
 
 	{`failFromRun`, func() {
@@ -45,5 +46,9 @@ func additionalBuildFunc() {
 
 func main() {
 	b.Register(commands)
-	b.BuildFromOsArgs()
+	buildErr := b.BuildFromOsArgs()
+	if buildErr != nil {
+		fmt.Println(buildErr)
+		os.Exit(-1)
+	}
 }
