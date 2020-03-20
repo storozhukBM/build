@@ -122,7 +122,7 @@ func (b *Build) ShRunCmd(cmd string, args ...string) func() {
 func (b *Build) ShRun(cmd string, args ...string) {
 	fullCmd := []string{cmd}
 	fullCmd = append(fullCmd, args...)
-	b.Run("/bin/sh", "-c", strings.Join(fullCmd, " "))
+	b.Run("sh", "-c", strings.Join(fullCmd, " "))
 }
 
 func (b *Build) Cmd(subCommand string, body func()) {
